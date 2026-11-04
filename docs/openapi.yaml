@@ -1,0 +1,660 @@
+openapi: 3.0.3
+info:
+  title: PingPilot API
+  version: 2.0.0
+  description: High-reliability synthetic monitoring, probing, and incident response engine.
+servers:
+  - url: http://localhost:8008
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      security: []
+      responses:
+        "200":
+          description: Health status
+  /health-check:
+    get:
+      security: []
+      responses:
+        "200":
+          description: Backwards-compatible health status
+  /ping-endpoint:
+    post:
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint]
+              properties:
+                endpoint:
+                  type: string
+      responses:
+        "200":
+          description: Manual HTTP check result
+  /api/v1/check:
+    post:
+      summary: Run an ad-hoc check
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitorInput"
+      responses:
+        "200":
+          description: Check result
+  /api/v1/monitors:
+    get:
+      summary: List monitors
+      parameters:
+        - name: tag
+          in: query
+          schema: { type: string }
+        - name: serviceId
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [up, down, degraded] }
+        - name: enabled
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Monitor list
+    post:
+      summary: Create monitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MonitorInput"
+      responses:
+        "201":
+          description: Created monitor
+  /api/v1/monitors/{id}:
+    get:
+      summary: Get monitor
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Monitor
+    put:
+      summary: Update monitor
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Updated monitor
+    delete:
+      summary: Delete monitor
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Deleted
+  /api/v1/monitors/{id}/check-now:
+    post:
+      summary: Run a stored monitor immediately
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Check result
+  /api/v1/monitors/{id}/results:
+    get:
+      summary: List monitor results
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Check results
+  /api/v1/check-results:
+    get:
+      summary: List check results
+      parameters:
+        - name: monitorId
+          in: query
+          schema: { type: string }
+        - name: serviceId
+          in: query
+          schema: { type: string }
+        - name: statusPageId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string, enum: [up, down, degraded] }
+        - name: excludeMaintenance
+          in: query
+          schema: { type: boolean }
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Check results
+  /api/v1/incidents:
+    get:
+      summary: List incidents
+      responses:
+        "200":
+          description: Incident list
+  /api/v1/incidents/{id}:
+    get:
+      summary: Get incident
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Incident
+  /api/v1/incidents/{id}/resolve:
+    post:
+      summary: Resolve incident
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200":
+          description: Resolved incident
+  /api/v1/stats/overview:
+    get:
+      summary: Overview stats
+      responses:
+        "200":
+          description: Overview stats
+  /api/v1/notification-channels:
+    get:
+      summary: List notification channels
+      responses:
+        "200":
+          description: Channels
+    post:
+      summary: Create notification channel
+      responses:
+        "201":
+          description: Created channel
+  /api/v1/api-keys:
+    get:
+      summary: List API keys
+      responses:
+        "200":
+          description: API keys without raw key values
+    post:
+      summary: Create API key
+      responses:
+        "201":
+          description: Created key with one-time raw value
+  /api/v1/services:
+    get:
+      summary: List services
+      responses:
+        "200": { description: Service list }
+    post:
+      summary: Create service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Service" }
+      responses:
+        "201": { description: Created service }
+  /api/v1/tags:
+    get:
+      summary: List tags
+      responses:
+        "200": { description: Tag list }
+  /api/v1/maintenance-windows:
+    get:
+      summary: List maintenance windows
+      responses:
+        "200": { description: Maintenance windows }
+    post:
+      summary: Create maintenance window
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MaintenanceWindow" }
+      responses:
+        "201": { description: Created maintenance window }
+  /api/v1/status-pages:
+    get:
+      summary: List status pages
+      responses:
+        "200": { description: Status pages }
+    post:
+      summary: Create status page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusPage" }
+      responses:
+        "201": { description: Created status page }
+  /api/v1/status-pages/{id}/components:
+    get:
+      summary: List status page components
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Components }
+    post:
+      summary: Create status page component
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusPageComponent" }
+      responses:
+        "201": { description: Created component }
+  /api/v1/reports/uptime:
+    get:
+      summary: Uptime report
+      parameters:
+        - name: monitorId
+          in: query
+          schema: { type: string }
+        - name: serviceId
+          in: query
+          schema: { type: string }
+        - name: statusPageId
+          in: query
+          schema: { type: string }
+        - name: from
+          in: query
+          schema: { type: string, format: date-time }
+        - name: to
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200": { description: Uptime report }
+  /api/v1/exports/check-results:
+    get:
+      summary: Export check results
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, csv] }
+      responses:
+        "200": { description: Check result export }
+  /api/v1/exports/incidents:
+    get:
+      summary: Export incidents
+      parameters:
+        - name: format
+          in: query
+          schema: { type: string, enum: [json, csv] }
+      responses:
+        "200": { description: Incident export }
+  /status/{slug}:
+    get:
+      security: []
+      summary: Render public status page
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Public status page HTML }
+  /status/{slug}/json:
+    get:
+      security: []
+      summary: Public status page JSON
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Public status page JSON }
+  /heartbeat/{token}:
+    get:
+      security: []
+      summary: Record a heartbeat
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Heartbeat recorded }
+    post:
+      security: []
+      summary: Record a heartbeat with metadata
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Heartbeat recorded }
+  /api/v1/incidents/{id}/state:
+    post:
+      summary: Transition incident state
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncidentTransition" }
+      responses:
+        "200": { description: Updated incident }
+  /api/v1/incidents/{id}/timeline:
+    get:
+      summary: List incident timeline events
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+      responses:
+        "200": { description: Timeline events }
+  /api/v1/incidents/{id}/comments:
+    get:
+      summary: List incident comments
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Incident comments }
+    post:
+      summary: Create incident comment
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncidentComment" }
+      responses:
+        "201": { description: Created comment }
+  /api/v1/incidents/{id}/postmortem:
+    get:
+      summary: Get incident post-mortem
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Post-mortem }
+    put:
+      summary: Create or update incident post-mortem
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Updated post-mortem }
+  /api/v1/incidents/{id}/action-items:
+    get:
+      summary: List incident action items
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Action items }
+    post:
+      summary: Create incident action item
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "201": { description: Created action item }
+  /api/v1/monitors/{id}/dependencies:
+    get:
+      summary: List monitor dependencies
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Monitor dependencies }
+    put:
+      summary: Replace monitor dependencies
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Updated dependencies }
+  /api/v1/agents:
+    get:
+      summary: List private agents
+      responses:
+        "200": { description: Agent list }
+    post:
+      summary: Provision private agent token
+      responses:
+        "201": { description: Agent and one-time token }
+  /api/v1/agent/jobs:
+    get:
+      security: []
+      summary: Poll assigned private-agent jobs
+      responses:
+        "200": { description: Agent jobs }
+  /api/v1/agent/results:
+    post:
+      security: []
+      summary: Submit private-agent check result
+      responses:
+        "200": { description: Stored check result }
+  /api/v1/status-pages/{id}/subscribers:
+    get:
+      summary: List status page subscribers
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Subscribers }
+  /api/v1/status-pages/{id}/announcements:
+    get:
+      summary: List status page announcements
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Announcements }
+    post:
+      summary: Publish status page announcement
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "201": { description: Created announcement }
+  /s/{slug}/subscribe:
+    post:
+      security: []
+      summary: Subscribe to a public status page
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "201": { description: Subscriber created pending confirmation }
+  /api/v1/on-call/schedules:
+    get:
+      summary: List on-call schedules
+      responses:
+        "200": { description: Schedules }
+    post:
+      summary: Create on-call schedule
+      responses:
+        "201": { description: Created schedule }
+  /api/v1/on-call/schedules/{id}/current:
+    get:
+      summary: Resolve current on-call shift
+      parameters:
+        - $ref: "#/components/parameters/id"
+        - name: at
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        "200": { description: Current shift }
+  /api/v1/escalation-policies:
+    get:
+      summary: List escalation policies
+      responses:
+        "200": { description: Policies }
+    post:
+      summary: Create escalation policy
+      responses:
+        "201": { description: Created policy }
+  /api/v1/runbooks:
+    get:
+      summary: List runbooks
+      responses:
+        "200": { description: Runbooks }
+    post:
+      summary: Create runbook
+      responses:
+        "201": { description: Created runbook }
+  /api/v1/browser-artifacts/{id}/download:
+    get:
+      summary: Download authenticated browser artifact
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "200": { description: Artifact bytes }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    MonitorInput:
+      type: object
+      required: [name, type, target]
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [http, api, tcp, udp, dns, tls, keyword, heartbeat, icmp, ping, browser, domain, multistep] }
+        target: { type: string }
+        method: { type: string, example: GET }
+        expectedStatus: { type: integer, example: 200 }
+        expectedKeyword: { type: string }
+        timeoutSeconds: { type: integer, example: 10 }
+        intervalSeconds: { type: integer, example: 60 }
+        failureThreshold: { type: integer, example: 3 }
+        enabled: { type: boolean }
+        serviceId: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        config:
+          type: object
+    Service:
+      type: object
+      required: [name, slug]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+    MaintenanceWindow:
+      type: object
+      required: [name, startsAt, endsAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        startsAt: { type: string, format: date-time }
+        endsAt: { type: string, format: date-time }
+        timezone: { type: string, example: UTC }
+        recurrence: { type: string, enum: [none, daily, weekly, monthly] }
+        enabled: { type: boolean }
+        monitorIds:
+          type: array
+          items: { type: string }
+        tagNames:
+          type: array
+          items: { type: string }
+    StatusPage:
+      type: object
+      required: [name, slug]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        description: { type: string }
+        logoUrl: { type: string }
+        primaryColor: { type: string }
+        public: { type: boolean }
+        published: { type: boolean }
+        autoUpdates: { type: boolean }
+        noIndex: { type: boolean }
+    StatusPageComponent:
+      type: object
+      required: [name]
+      properties:
+        id: { type: string }
+        statusPageId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        serviceId: { type: string }
+        manualStatus: { type: string, enum: [up, down, degraded] }
+        orderIndex: { type: integer }
+        monitorIds:
+          type: array
+          items: { type: string }
+    IncidentTransition:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [open, acknowledged, investigating, identified, monitoring, resolved] }
+        severity: { type: string, enum: [info, warning, minor, major, critical] }
+        impact: { type: string, enum: [none, degraded, partial_outage, full_outage] }
+        assignedToUserId: { type: string }
+        message: { type: string }
+    IncidentComment:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string }
+        visibility: { type: string, enum: [internal, public] }
+    OnCallSchedule:
+      type: object
+      required: [name, timezone, participants, rotationSeconds]
+      properties:
+        name: { type: string }
+        timezone: { type: string, example: Australia/Sydney }
+        participants:
+          type: array
+          items: { type: string }
+        rotationSeconds: { type: integer }
+        handoffAt: { type: string, format: date-time }
+    EscalationPolicy:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        enabled: { type: boolean }
+        monitorId: { type: string }
+        serviceId: { type: string }
+        tagName: { type: string }
+        severity: { type: string, enum: [info, warning, minor, major, critical] }
+        impact: { type: string, enum: [none, degraded, partial_outage, full_outage] }
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              delaySeconds: { type: integer }
+              channelIds:
+                type: array
+                items: { type: string }
+              scheduleId: { type: string }
+              targetUserId: { type: string }
+              method: { type: string }
